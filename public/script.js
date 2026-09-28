@@ -21,8 +21,35 @@ let tTab='all',tSearch='',tFilt={prio:'all',cat:'all'};
 let pCol=PCOLORS[0];
 
 // ═══ PERSISTENCE ══════════════════════════════════════════
-function load(){try{const d=JSON.parse(localStorage.getItem('tly3')||'{}');if(d.tasks)S.tasks=d.tasks;if(d.projects)S.projects=d.projects;if(d.team)S.team=d.team;if(d.settings)Object.assign(S.settings,d.settings);}catch(e){}}
-function save(){localStorage.setItem('tly3',JSON.stringify(S));}
+async function load(){
+  try{
+    const d=JSON.parse(localStorage.getItem('tly3')||'{}');
+    if(d.tasks)S.tasks=d.tasks;
+    if(d.projects)S.projects=d.projects;
+    if(d.team)S.team=d.team;
+    if(d.settings)Object.assign(S.settings,d.settings);
+  }catch(e){}
+  
+  try {
+    const res = await fetch('/api/tasks');
+    const data = await res.json();
+    if(data.tasks) {
+       S.tasks = data.tasks;
+       nav(curP); 
+    }
+  } catch(e){}
+}
+function save(){
+  localStorage.setItem('tly3',JSON.stringify(S));
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  if (csrf) {
+    fetch('/api/tasks/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+      body: JSON.stringify({ tasks: S.tasks })
+    }).catch(e=>{});
+  }
+}
 
 // ═══ UTILS ════════════════════════════════════════════════
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -63,12 +90,51 @@ function nav(p){
   const pages={dashboard:pgDash,tasks:pgTasks,calendar:pgCal,projects:pgProj,team:pgTeam,reports:pgRep,settings:pgSet};
   document.getElementById('pw').innerHTML='';
   (pages[p]||pgDash)();
+  if(typeof updateNotifs === 'function') updateNotifs();
 }
 
 function updateUser(){
   document.getElementById('uav').textContent=inits(S.settings.name);
   document.getElementById('unm').textContent=S.settings.name;
   document.getElementById('url').textContent=S.settings.role;
+}
+
+function updateNotifs() {
+  const nlist = document.getElementById('nlist');
+  const ndot = document.getElementById('ndot');
+  if(!nlist || !ndot) return;
+  
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  const in3Days = new Date(now);
+  in3Days.setDate(in3Days.getDate() + 3);
+  
+  const upcoming = S.tasks.filter(t => {
+    if(t.status === 'done') return false;
+    if(!t.dueDate) return false;
+    const d = new Date(t.dueDate);
+    return d <= in3Days;
+  }).sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate));
+  
+  if(upcoming.length > 0) {
+    ndot.style.display = 'block';
+    nlist.innerHTML = upcoming.map(t => {
+      const d = new Date(t.dueDate);
+      const isO = d < now;
+      return `<div style="padding:10px; background:#f9fafb; border-radius:8px; border-left:3px solid ${isO ? '#ef4444' : '#f59e0b'}; cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='#f9fafb'" onclick="nav('tasks'); document.getElementById('nmenu').style.display='none';">
+        <div style="font-size:13px; font-weight:600; color:#1f2937;">${esc(t.name)}</div>
+        <div style="font-size:11px; color:#6b7280; margin-top:4px;">${isO ? 'Overdue!' : 'Due soon:'} ${fmtDs(t.dueDate)}</div>
+      </div>`;
+    }).join('');
+  } else {
+    ndot.style.display = 'none';
+    nlist.innerHTML = `<div style="font-size:12px; color:#9ca3af; text-align:center; padding:10px;">No upcoming deadlines</div>`;
+  }
+}
+
+window.toggleNotif = function() {
+  const nm = document.getElementById('nmenu');
+  if(nm) nm.style.display = nm.style.display === 'none' ? 'block' : 'none';
 }
 
 function onGSearch(v){if(!v){tSearch='';}}
@@ -396,7 +462,7 @@ function taskModal(id){
   const today=new Date().toISOString().split('T')[0];
   return`<div class="mhdr"><div class="mtl">${t?'Edit Task':'New Task'}</div><div class="mcl" onclick="closeModal()">×</div></div>
   <form onsubmit="submitTask(event)">
-    <div class="fg"><label class="fl">Task Name *</label><input class="fi" id="mn" value="${esc(t?.name||'')}" placeholder="Enter task name…" required maxlength="100"/></div>
+    <div class="fg"><label class="fl">Task Name *</label><input class="fi" id="mtn" value="${esc(t?.name||'')}" placeholder="Enter task name…" required maxlength="100"/></div>
     <div class="fg"><label class="fl">Description</label><textarea class="fta" id="md" placeholder="Add a description…">${esc(t?.desc||'')}</textarea></div>
     <div class="fg2">
       <div class="fg"><label class="fl">Category *</label><select class="fs" id="mcat">${CATS.map(c=>`<option value="${c}" ${(t?.cat||CATS[0])===c?'selected':''}>${c}</option>`).join('')}</select></div>
@@ -445,10 +511,35 @@ function pickC(c,el){pCol=c;document.querySelectorAll('.colop').forEach(x=>x.cla
 // ═══ FORM SUBMIT ══════════════════════════════════════════
 function submitTask(e){
   e.preventDefault();
-  const data={id:eid||uid(),name:document.getElementById('mn').value.trim(),desc:document.getElementById('md')?.value.trim()||'',cat:document.getElementById('mcat').value,prio:document.getElementById('mpr').value,dueDate:document.getElementById('mdt').value,status:document.getElementById('mst').value,projectId:document.getElementById('mpj')?.value||null,assigneeId:document.getElementById('mas')?.value||null};
-  if(eid){const i=S.tasks.findIndex(t=>t.id===eid);if(i>-1)S.tasks[i]=data;toast('Task updated!','ok');}
-  else{S.tasks.push(data);toast('Task created!','ok');}
-  save();closeModal();nav(curP);
+  const mtn = document.getElementById('mtn');
+  if (!mtn || !mtn.value.trim()) return;
+  const md = document.getElementById('md');
+  const mpj = document.getElementById('mpj');
+  const mas = document.getElementById('mas');
+  
+  const data = {
+    id: eid || uid(),
+    name: mtn.value.trim(),
+    desc: md ? md.value.trim() : '',
+    cat: document.getElementById('mcat').value,
+    prio: document.getElementById('mpr').value,
+    dueDate: document.getElementById('mdt').value,
+    status: document.getElementById('mst').value,
+    projectId: mpj ? mpj.value : null,
+    assigneeId: mas ? mas.value : null
+  };
+  
+  if(eid){
+    const i = S.tasks.findIndex(t => t.id === eid);
+    if(i > -1) S.tasks[i] = data;
+    toast('Task updated!','ok');
+  } else {
+    S.tasks.push(data);
+    toast('Task created!','ok');
+  }
+  save();
+  closeModal();
+  nav(curP);
 }
 
 function submitProj(e){

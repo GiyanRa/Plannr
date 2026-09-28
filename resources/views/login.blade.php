@@ -8,36 +8,118 @@
   <link rel="stylesheet" href="{{ asset('style.css') }}" />
   <style>
     body {
-      background: linear-gradient(135deg, var(--bg) 0%, var(--pup) 100%);
+      background-color: var(--bg);
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
       margin: 0;
-      transition: background 0.3s;
+      overflow: hidden;
+      position: relative;
+      transition: background-color 0.3s;
     }
+    
+    /* Aurora Background */
+    .bg-aurora {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      overflow: hidden;
+      z-index: -3;
+    }
+    .aurora-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.6;
+      animation: drift 20s infinite alternate ease-in-out;
+    }
+    .blob-1 { width: 400px; height: 400px; background: #8b5cf6; top: -10%; left: -10%; animation-delay: 0s; }
+    .blob-2 { width: 500px; height: 500px; background: #4f46e5; bottom: -20%; right: -10%; animation-delay: -5s; }
+    .blob-3 { width: 300px; height: 300px; background: #ec4899; top: 40%; left: 60%; animation-delay: -10s; }
+    .blob-4 { width: 350px; height: 350px; background: #10b981; top: 60%; left: 10%; animation-delay: -15s; }
+
+    @keyframes drift {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(50px, -50px) scale(1.1); }
+    }
+
+    /* Dot Grid */
+    .bg-dots {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: radial-gradient(var(--g300) 1px, transparent 1px);
+      background-size: 24px 24px;
+      z-index: -2;
+      opacity: 0.5;
+      mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 70%);
+      -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 70%);
+    }
+
+    /* Floating Cards */
+    .bg-floating-cards {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      overflow: hidden;
+      z-index: -1;
+      pointer-events: none;
+    }
+    .float-card {
+      position: absolute;
+      bottom: -100px;
+      width: 60px;
+      height: 60px;
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(4px);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--pu);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      border: 1px solid rgba(255,255,255,0.6);
+      animation: floatUp linear infinite;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(0) rotate(0deg) scale(var(--s, 1)); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-120vh) rotate(360deg) scale(var(--s, 1)); opacity: 0; }
+    }
+
     @media (prefers-color-scheme: dark) {
-      body {
-        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      body { background-color: #0f172a; }
+      .aurora-blob { opacity: 0.4; }
+      .bg-dots { background-image: radial-gradient(#334155 1px, transparent 1px); }
+      .float-card {
+        background: rgba(30, 41, 59, 0.4);
+        border-color: rgba(255,255,255,0.1);
+        color: #8b5cf6;
       }
       .login-wrapper {
-        background: #1e293b !important;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.5) !important;
+        background: rgba(15, 23, 42, 0.6) !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4) !important;
       }
       .login-title, .logo-tx, .fl { color: #f8fafc !important; }
       .login-sub, .login-footer { color: #94a3b8 !important; }
-      .fi { background: #0f172a !important; border-color: #334155 !important; color: #f8fafc !important; }
+      .fi { background: rgba(15, 23, 42, 0.5) !important; border-color: #334155 !important; color: #f8fafc !important; }
       .mascot-msg { color: #e2e8f0 !important; background: #334155 !important; }
     }
+
+    /* Glassmorphism for login wrapper */
     .login-wrapper {
-      background: var(--wh);
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
       width: 100%;
       max-width: 420px;
       padding: 40px;
       border-radius: var(--rxl);
-      box-shadow: var(--s3);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
       text-align: center;
       position: relative;
+      z-index: 10;
     }
     .back-btn {
       position: absolute;
@@ -125,6 +207,26 @@
   </style>
 </head>
 <body>
+
+  <!-- Dynamic Background Layers -->
+  <div class="bg-aurora">
+    <div class="aurora-blob blob-1"></div>
+    <div class="aurora-blob blob-2"></div>
+    <div class="aurora-blob blob-3"></div>
+    <div class="aurora-blob blob-4"></div>
+  </div>
+  <div class="bg-dots"></div>
+  <div class="bg-floating-cards">
+    <div class="float-card" style="left: 15%; animation-delay: 0s; animation-duration: 15s; --s: 1;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>
+    </div>
+    <div class="float-card" style="left: 85%; animation-delay: -5s; animation-duration: 20s; --s: 0.8;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>
+    </div>
+    <div class="float-card" style="left: 50%; animation-delay: -12s; animation-duration: 18s; --s: 1.2;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>
+    </div>
+  </div>
 
   <div class="login-wrapper">
     <a href="{{ route('dashboard') }}" class="back-btn">
@@ -338,28 +440,33 @@
       const email = emailInput.value;
       const pw = pwInput.value;
       
-      // Simulate validation
       if(pw.length < 3) {
         showError();
         return;
       }
       
-      showSuccess();
-      const nameParts = email.split('@')[0].split(/[._]/);
-      const name = nameParts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
-      
-      try {
-        let S = JSON.parse(localStorage.getItem('tly3') || '{}');
-        if (!S.settings) S.settings = {};
-        S.settings.name = S.settings.name || name || 'User';
-        S.settings.role = 'Plannr User';
-        S.settings.email = email;
-        localStorage.setItem('tly3', JSON.stringify(S));
-      } catch(err) {}
-
-      setTimeout(() => {
-        window.location.href = '{{ route("dashboard") }}';
-      }, 1000);
+      fetch('{{ url("/login") }}', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': '{{ csrf_token() }}'
+          },
+          body: JSON.stringify({ email: email, password: pw })
+      })
+      .then(response => response.json())
+      .then(data => {
+          if(data.status === 'success') {
+              showSuccess();
+              setTimeout(() => {
+                window.location.href = '{{ route("dashboard") }}';
+              }, 1000);
+          } else {
+              showError();
+          }
+      })
+      .catch(error => {
+          showError();
+      });
     }
   </script>
 </body>

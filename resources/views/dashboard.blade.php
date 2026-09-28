@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>Taskly � Task Management</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet" />
@@ -12,9 +13,15 @@
   <script>
     (function(){
       let S = JSON.parse(localStorage.getItem('tly3') || '{}');
-      if (!S.settings || !S.settings.name || S.settings.name === '') {
-        window.location.href = '{{ route("login") }}';
-      }
+      if (!S.settings) S.settings = {};
+      @auth
+      S.settings.name = '{{ Auth::user()->name }}';
+      S.settings.email = '{{ Auth::user()->email }}';
+      S.settings.role = 'Plannr User';
+      @else
+      window.location.href = '{{ route("login") }}';
+      @endauth
+      localStorage.setItem('tly3', JSON.stringify(S));
     })();
   </script>
 </head>
@@ -97,6 +104,9 @@
       </svg>
       <span class="clbl">Collapse</span>
     </div>
+    <div class="clbl" style="text-align:center; font-size:11px; color:#9ca3af; margin-top:20px; font-weight:500;">
+      &copy; {{ date('Y') }} Giyan Radhietya Akmal
+    </div>
   </aside>
 
   <!-- MAIN AREA -->
@@ -112,13 +122,18 @@
           onkeydown="if(event.key==='Enter'&&this.value){tSearch=this.value;nav('tasks')}" />
       </div>
       <div class="tbr">
-        <div class="icbtn">
+        <div class="icbtn" id="nbtn" style="position:relative;" onclick="toggleNotif()">
           <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#6b7280" stroke-width="2">
-            <path d="M15 17H9m9.293-2.293A6 6 0 006.07 10.07A6 6 0 006 10v5l-1 1h14l-1-1v-5a6 6 0 00-2.707-5.293"
-              stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M15 17H9m9.293-2.293A6 6 0 006.07 10.07A6 6 0 006 10v5l-1 1h14l-1-1v-5a6 6 0 00-2.707-5.293" stroke-linecap="round" stroke-linejoin="round" />
             <path d="M13.73 21a2 2 0 01-3.46 0" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
-          <div class="ndot"></div>
+          <div class="ndot" id="ndot" style="display:none;"></div>
+          
+          <!-- Notif Menu -->
+          <div id="nmenu" style="display:none; position:absolute; top:calc(100% + 12px); right:-10px; background:#fff; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); border-radius:12px; padding:12px; width:280px; z-index:100; border:1px solid #e5e7eb; cursor:default; text-align:left;">
+            <div style="font-weight:700; font-size:14px; color:#1f2937; margin-bottom:12px; border-bottom:1px solid #f3f4f6; padding-bottom:8px;">Notifications</div>
+            <div id="nlist" style="max-height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
+          </div>
         </div>
         <div class="uchip" style="position:relative;" onclick="document.getElementById('umenu').style.display = document.getElementById('umenu').style.display === 'none' ? 'block' : 'none'">
           <div class="uav" id="uav">LO</div>
@@ -153,16 +168,10 @@
   <div class="tc" id="tc"></div>
 
   <!-- LOAD SCRIPT -->
-  <script src="{{ asset('script.js') }}"></script>
+  <script src="{{ asset('script.js') }}?v={{ time() }}"></script>
 </body>
 
 </html>
-
-
-
-
-
-
 
 <script>
   function doLogout() {
@@ -175,7 +184,13 @@
       }
       localStorage.setItem('tly3', JSON.stringify(S));
     } catch(err) {}
-    window.location.href = '{{ route("login") }}';
+    
+    fetch('{{ route("logout") }}', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+    }).then(() => {
+        window.location.href = '{{ route("login") }}';
+    });
   }
   
   document.addEventListener('click', function(e) {
@@ -183,6 +198,12 @@
     const uchip = document.querySelector('.uchip');
     if (umenu && umenu.style.display === 'block' && !uchip.contains(e.target)) {
       umenu.style.display = 'none';
+    }
+    
+    const nmenu = document.getElementById('nmenu');
+    const nbtn = document.getElementById('nbtn');
+    if (nmenu && nmenu.style.display === 'block' && !nbtn.contains(e.target)) {
+      nmenu.style.display = 'none';
     }
   });
 </script>
