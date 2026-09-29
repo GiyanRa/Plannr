@@ -12,16 +12,17 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script>
     (function(){
-      let S = JSON.parse(localStorage.getItem('tly3') || '{}');
-      if (!S.settings) S.settings = {};
       @auth
+      window.USER_KEY = 'tly3_{{ Auth::user()->id }}';
+      let S = JSON.parse(localStorage.getItem(window.USER_KEY) || '{}');
+      if (!S.settings) S.settings = {};
       S.settings.name = '{{ Auth::user()->name }}';
       S.settings.email = '{{ Auth::user()->email }}';
       S.settings.role = 'Plannr User';
+      localStorage.setItem(window.USER_KEY, JSON.stringify(S));
       @else
       window.location.href = '{{ route("login") }}';
       @endauth
-      localStorage.setItem('tly3', JSON.stringify(S));
     })();
   </script>
 </head>
@@ -176,13 +177,14 @@
 <script>
   function doLogout() {
     try {
-      let S = JSON.parse(localStorage.getItem('tly3') || '{}');
+      let key = window.USER_KEY || 'tly3';
+      let S = JSON.parse(localStorage.getItem(key) || '{}');
       if (S.settings) {
         S.settings.name = '';
         S.settings.email = '';
         S.settings.role = '';
       }
-      localStorage.setItem('tly3', JSON.stringify(S));
+      localStorage.setItem(key, JSON.stringify(S));
     } catch(err) {}
     
     fetch('{{ route("logout") }}', {

@@ -23,7 +23,8 @@ let pCol=PCOLORS[0];
 // ═══ PERSISTENCE ══════════════════════════════════════════
 async function load(){
   try{
-    const d=JSON.parse(localStorage.getItem('tly3')||'{}');
+    const key = window.USER_KEY || 'tly3';
+    const d=JSON.parse(localStorage.getItem(key)||'{}');
     if(d.tasks)S.tasks=d.tasks;
     if(d.projects)S.projects=d.projects;
     if(d.team)S.team=d.team;
@@ -40,7 +41,8 @@ async function load(){
   } catch(e){}
 }
 function save(){
-  localStorage.setItem('tly3',JSON.stringify(S));
+  const key = window.USER_KEY || 'tly3';
+  localStorage.setItem(key,JSON.stringify(S));
   const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
   if (csrf) {
     fetch('/api/tasks/sync', {
@@ -211,11 +213,13 @@ function buildRisk(){
   CH.risk=new Chart(canvas.getContext('2d'),{
     type:'bar',
     data:{
-      labels:['High Risk','Medium Risk','Low Risk'],
+      labels:['High risk','Medium risk','Low risk'],
       datasets:[{
         data:[h,m,l],
-        backgroundColor:['rgba(239, 68, 68, 0.8)','rgba(245, 158, 11, 0.8)','rgba(16, 185, 129, 0.8)'],
-        borderRadius:6,borderSkipped:false
+        backgroundColor:['#ef4444','#f59e0b','#10b981'],
+        borderWidth:0,
+        borderRadius:4,
+        barPercentage:0.4
       }]
     },
     options:{
@@ -223,7 +227,7 @@ function buildRisk(){
       plugins:{legend:{display:false}},
       scales:{
         x:{grid:{display:false},ticks:{font:{size:11},color:'#9ca3af'}},
-        y:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},color:'#9ca3af',stepSize:1},beginAtZero:true}
+        y:{grid:{color:'#e5e7eb',drawBorder:false},ticks:{font:{size:11},color:'#9ca3af',stepSize:1},beginAtZero:true}
       }
     }
   });
