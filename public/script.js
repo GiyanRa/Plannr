@@ -171,6 +171,8 @@ function pgDash(){
         <div class="chtcard">
           <div class="chthdr"><div class="chttl">Tasks Overview</div><select class="wks" id="wksel" onchange="buildLine()"><option value="week">This Week</option><option value="month">This Month</option></select></div>
           <canvas id="lc" height="140"></canvas>
+          <div class="chttl" style="margin-top:45px;margin-bottom:10px;font-size:13px;color:var(--g600);">Pending Risks / Priorities</div>
+          <canvas id="rc" height="130"></canvas>
         </div>
         <div class="chtcard">
           <div class="chthdr"><div class="chttl">By Priority</div></div>
@@ -197,7 +199,34 @@ function pgDash(){
     </div>
   </div>`;
   renderMiniCal();
-  setTimeout(()=>{buildLine();buildDonut('dc','dleg');},60);
+  setTimeout(()=>{buildLine();buildDonut('dc','dleg');buildRisk();},60);
+}
+
+function buildRisk(){
+  if(CH.risk){try{CH.risk.destroy();}catch(e){}}
+  const h=S.tasks.filter(t=>t.status!=='done'&&t.prio==='High').length;
+  const m=S.tasks.filter(t=>t.status!=='done'&&t.prio==='Medium').length;
+  const l=S.tasks.filter(t=>t.status!=='done'&&t.prio==='Low').length;
+  const canvas=document.getElementById('rc');if(!canvas)return;
+  CH.risk=new Chart(canvas.getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:['High Risk','Medium Risk','Low Risk'],
+      datasets:[{
+        data:[h,m,l],
+        backgroundColor:['rgba(239, 68, 68, 0.8)','rgba(245, 158, 11, 0.8)','rgba(16, 185, 129, 0.8)'],
+        borderRadius:6,borderSkipped:false
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:11},color:'#9ca3af'}},
+        y:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},color:'#9ca3af',stepSize:1},beginAtZero:true}
+      }
+    }
+  });
 }
 
 function recentTasksHTML(){
